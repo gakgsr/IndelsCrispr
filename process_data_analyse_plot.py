@@ -15,6 +15,8 @@ def process_count_files(data_folder):
   name_col = []
   # Names of the genes
   name_genes = []
+  # count total in file
+  file_total_count = []
   ##
   # Access all the indel files
   # Read them to get a list of unique indels and the list of column names
@@ -24,6 +26,7 @@ def process_count_files(data_folder):
       i = 0
       num_col_i = 0
       for line in f:
+        total_count_i = 0
         line = line.replace('"', '')
         line = line.replace('\n', '')
         l = line.split(',')
@@ -40,7 +43,11 @@ def process_count_files(data_folder):
           # We try to account for such things in this space
           for j in range(0, len(l) - num_col_i):
             row_name += l[j]
+          for j in range(len(l) - num_col_i, len(l)):
+            if l[j] != 'NA':
+              total_count_i += int(l[j])
           name_row.append(row_name)
+          file_total_count.append(total_count_i)
         i += 1
 
   # Find unique indels and column headers
@@ -70,6 +77,7 @@ def process_count_files(data_folder):
       for line in f:
         line = line.replace('"', '')
         line = line.replace('\n', '')
+        total_count_i = 0
         l = line.split(',')
         if i == 0:
           num_col_i = len(l)
@@ -90,13 +98,14 @@ def process_count_files(data_folder):
               indel_count_matrix[row_index, col_index] = -1
             else:
               indel_count_matrix[row_index, col_index] = int(l[j])
-            # See if file has insertion, deletion, or SNV
-            if row_name.find('SNV') != -1:
-              SNV_present[col_index] += 1
-            if row_name.find('I') != -1:
-              insertion_present[col_index] += 1
-            if row_name.find('D') != -1:
-              deletion_present[col_index] += 1
+              total_count_i += int(l[j])
+          # See if file has insertion, deletion, or SNV
+          if row_name.find('SNV') != -1 and float(total_count_i)/file_total_count[i] > 0.02:
+            SNV_present[col_index] += 1
+          if row_name.find('I') != -1 and float(total_count_i)/file_total_count[i] > 0.02:
+            insertion_present[col_index] += 1
+          if row_name.find('D') != -1 and float(total_count_i)/file_total_count[i] > 0.02:
+            deletion_present[col_index] += 1
         i += 1
 
   # Save the indel counts and row, column name information
@@ -186,12 +195,18 @@ def analysis_count_files(indel_count_matrix, row_index, unique_name_col):
   gene_name_uniq = list(set(gene_name_index))
   file_name_uniq = list(set(file_name_index))
 
+  for i in range(len(gene_name_uniq)):
+    plt.scatter(X[gene_name_index == gene_name_uniq[i], 0], X[gene_name_index == gene_name_uniq[i], 1])
+    plt.savefig(gene_name[gene_name_uniq[i]] + '_TSNE.png')
+    plt.clf()
+  '''
   plt.scatter(X[:, 0], X[:, 1], c = gene_name_index)
   plt.savefig('TSNE_by_gene_name.png')
   plt.clf()
   plt.scatter(X[:, 0], X[:, 1], c = file_name_index)
   plt.savefig('TSNE_by_file_name.png')
   plt.clf()
+  '''
 
 
 # Folder containing all the indel files
