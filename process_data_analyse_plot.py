@@ -13,10 +13,9 @@ def process_count_files(data_folder):
   name_row = []
   # Names of the columns (the different file names appended with the column headers)
   name_col = []
-  # Names of the genes
+  ##
   name_genes = []
-  # count total in file
-  file_total_count = []
+  name_files = []
   ##
   # Access all the indel files
   # Read them to get a list of unique indels and the list of column names
@@ -25,6 +24,7 @@ def process_count_files(data_folder):
     with open(out_file) as f:
       i = 0
       num_col_i = 0
+      name_files.append(out_file[len(data_folder) + 7:-4])
       for line in f:
         total_count_i = 0
         line = line.replace('"', '')
@@ -43,11 +43,7 @@ def process_count_files(data_folder):
           # We try to account for such things in this space
           for j in range(0, len(l) - num_col_i):
             row_name += l[j]
-          for j in range(len(l) - num_col_i, len(l)):
-            if l[j] != 'NA':
-              total_count_i += int(l[j])
           name_row.append(row_name)
-          file_total_count.append(total_count_i)
         i += 1
 
   # Find unique indels and column headers
@@ -61,11 +57,17 @@ def process_count_files(data_folder):
   # Create a numpy matrix of size unique_name_row x unique_name_col of integers
   indel_count_matrix = np.zeros((len(unique_name_row), len(unique_name_col)), dtype = int)
   # Create a numpy vector of size unique_name_col to store number of insertions
-  insertion_present = np.zeros(len(unique_name_row), dtype = int)
+  insertion_present = np.zeros(len(unique_name_col), dtype = int)
   # Create a numpy vector of size unique_name_col to store number of deletions
-  deletion_present = np.zeros(len(unique_name_row), dtype = int)
+  deletion_present = np.zeros(len(unique_name_col), dtype = int)
   # Create a numpy vector of size unique_name_col to store number of SNV
-  SNV_present = np.zeros(len(unique_name_row), dtype = int)
+  SNV_present = np.zeros(len(unique_name_col), dtype = int)
+  # Create a numpy vector of size name_files to store number of insertions
+  insertion_present_file = np.zeros(len(name_files), dtype = int)
+  # Create a numpy vector of size name_files to store number of deletions
+  deletion_present_file = np.zeros(len(name_files), dtype = int)
+  # Create a numpy vector of size name_files to store number of SNV
+  SNV_present_file = np.zeros(len(name_files), dtype = int)
 
   # Store the corresponding values from the files into indel_count_matrix
   # To do this, again access all the indel files, but also read the the indel count values this time
@@ -77,7 +79,6 @@ def process_count_files(data_folder):
       for line in f:
         line = line.replace('"', '')
         line = line.replace('\n', '')
-        total_count_i = 0
         l = line.split(',')
         if i == 0:
           num_col_i = len(l)
@@ -98,14 +99,52 @@ def process_count_files(data_folder):
               indel_count_matrix[row_index, col_index] = -1
             else:
               indel_count_matrix[row_index, col_index] = int(l[j])
-              total_count_i += int(l[j])
-          # See if file has insertion, deletion, or SNV
-          if row_name.find('SNV') != -1 and float(total_count_i)/file_total_count[i] > 0.02:
-            SNV_present[col_index] += 1
-          if row_name.find('I') != -1 and float(total_count_i)/file_total_count[i] > 0.02:
-            insertion_present[col_index] += 1
-          if row_name.find('D') != -1 and float(total_count_i)/file_total_count[i] > 0.02:
-            deletion_present[col_index] += 1
+        i += 1
+
+  # Compute, by file and file + cell type, the number of types of indels above a threshold
+  # To do this, again access all the indel files, but also read the the indel count values this time
+  threshold = 5.0
+  for out_file in glob.glob(data_folder + "proportions-*.txt"):
+    with open(out_file) as f:
+      i = 0
+      file_col_name = []
+      num_col_i = 0
+      for line in f:
+        line = line.replace('"', '')
+        line = line.replace('\n', '')
+        total_count_i = 0.0
+        l = line.split(',')
+        if i == 0:
+          num_col_i = len(l)
+          for j in range(len(l)):
+            file_col_name.append(out_file[len(data_folder) + 12:-4] + '-' + l[j])
+        else:
+          row_name = ''
+          # Some positions are of the form: "-23:-21D,-19:-15D", which get split by the process
+          # We try to account for such things in this space
+          for j in range(0, len(l) - num_col_i):
+            row_name += l[j]
+          for j in range(len(l) - num_col_i, len(l)):
+            row_index = unique_name_row.index(row_name)
+            col_index = unique_name_col.index(file_col_name[j - len(l) + num_col_i])
+            # Extract count value
+            if l[j] != 'NA' and float(l[j]) > threshold:
+              # See if file has insertion, deletion, or SNV
+              if row_name.find('SNV') != -1:
+                SNV_present[col_index] += 1
+              if row_name.find('I') != -1:
+                insertion_present[col_index] += 1
+              if row_name.find('D') != -1:
+                deletion_present[col_index] += 1
+            if l[j] != 'NA':
+              total_count_i += float(l[j])
+          if total_count_i/num_col_i > threshold:
+            if row_name.find('SNV') != -1:
+              SNV_present_file[i] += 1
+            if row_name.find('I') != -1:
+              insertion_present_file[i] += 1
+            if row_name.find('D') != -1:
+              deletion_present_file[i] += 1
         i += 1
 
   # Save the indel counts and row, column name information
@@ -116,10 +155,14 @@ def process_count_files(data_folder):
   for col_name_val in unique_name_col:
     col_index_file.write("%s\n" % col_name_val)
   np.savetxt("indel_count_matrix.txt", indel_count_matrix)
-  indel_type_file = open('indel_type_by_file.txt', 'w')
-  indel_type_file.write("File_Name,Insertion_Count,Deletion_Count,SNV_Count\n")
+  indel_type_file = open('indel_type_by_file_col.txt', 'w')
+  indel_type_file.write("File_col_Name,Insertion_Count,Deletion_Count,SNV_Count\n")
   for i in range(len(unique_name_col)):
-    indel_type_file.write("%s %d %d %d\n" % (unique_name_col[i], insertion_present[i], deletion_present[i], SNV_present[i]))
+    indel_type_file.write("%s,%d,%d,%d\n" % (unique_name_col[i], insertion_present[i], deletion_present[i], SNV_present[i]))
+  indel_type_file_only = open('indel_type_by_file.txt', 'w')
+  indel_type_file_only.write("File_Name,Insertion_Count,Deletion_Count,SNV_Count\n")
+  for i in range(len(name_files)):
+    indel_type_file_only.write("%s,%d,%d,%d\n" % (name_files[i], insertion_present_file[i], deletion_present_file[i], SNV_present_file[i]))
 
   # Process to compute gene-wise count of insertions, deletions, and SNV and save
   insertion_present_gene = np.zeros(len(unique_name_genes), dtype = int)
@@ -194,9 +237,24 @@ def analysis_count_files(indel_count_matrix, row_index, unique_name_col):
 
   gene_name_uniq = list(set(gene_name_index))
   file_name_uniq = list(set(file_name_index))
+  gene_name_uniq.sort()
+  file_name_uniq.sort()
+  file_gene_map = np.zeros((len(gene_name_uniq), 5), dtype = int) - 1
+  for i in range(len(gene_name_uniq)):
+    k = 0
+    for j in range(len(file_name_uniq)):
+      if file_name[file_name_uniq[j]].split('-')[0] == gene_name[gene_name_uniq[i]]:
+        file_gene_map[i, k] = file_name_uniq[j]
+        k += 1
+
 
   for i in range(len(gene_name_uniq)):
-    plt.scatter(X[gene_name_index == gene_name_uniq[i], 0], X[gene_name_index == gene_name_uniq[i], 1])
+    fig, ax = plt.subplots()
+    ax.plot(X[:, 0], X[:, 1], marker = 'o', linestyle = '', label = 'All Genes')
+    for j in range(5):
+      if file_gene_map[i, j] != -1:
+        ax.plot(X[file_name_index == file_gene_map[i, j], 0], X[file_name_index == file_gene_map[i, j], 1], marker = 'o', linestyle = '', label = file_name[file_gene_map[i, j]])
+    ax.legend()
     plt.savefig(gene_name[gene_name_uniq[i]] + '_TSNE.png')
     plt.clf()
   '''
