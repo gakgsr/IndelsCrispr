@@ -264,24 +264,20 @@ def analysis_count_files(indel_count_matrix, row_index, unique_name_col):
   plt.savefig('all-genes.pdf')
   plt.clf()
 
-  heat_map_inner_prod = np.matmul(indel_count_matrix_small, np.transpose(indel_count_matrix_small))
+  heat_map_inner_prod = np.matmul(np.transpose(indel_count_matrix_small), indel_count_matrix_small)
   # The next 2 lines change the plot from inner product to cosine distance
   #  For just the inner product, comment these two lines
-  col_wise_norms = np.expand_dims(np.linalg.norm(indel_count_matrix_small, axis = 1), axis = 1)
+  col_wise_norms = np.expand_dims(np.linalg.norm(indel_count_matrix_small, axis = 0), axis = 1)
   heat_map_inner_prod = np.divide(heat_map_inner_prod, np.matmul(col_wise_norms, np.transpose(col_wise_norms)))
-  # Not the most efficient ways of getting the row names, but quick fix
-  heat_map_axis = []
-  for i in range(200):
-    heat_map_axis.append(row_index[np.argsort(number_of_files_per_indel)[::-1][i]])
   fig, axis = plt.subplots()
   heat_map = axis.pcolor(heat_map_inner_prod, cmap = plt.cm.Blues)
   axis.set_yticks(np.arange(heat_map_inner_prod.shape[0])+0.5, minor=False)
   axis.set_xticks(np.arange(heat_map_inner_prod.shape[1])+0.5, minor=False)
   axis.invert_yaxis()
-  axis.set_yticklabels(heat_map_axis, minor=False)
-  axis.set_xticklabels(heat_map_axis, minor=False)
-  axis.xticks(fontsize=6, rotation=90)
-  axis.yticks(fontsize=6)
+  axis.set_yticklabels(unique_name_col, minor=False)
+  axis.set_xticklabels(unique_name_col, minor=False)
+  plt.xticks(fontsize=2.5, rotation=90)
+  plt.yticks(fontsize=2.5)
   plt.colorbar(heat_map)
   plt.savefig('inner_product_heat_map.pdf')
   plt.clf
