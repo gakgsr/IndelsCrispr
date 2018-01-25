@@ -53,6 +53,7 @@ def process_count_files(data_folder):
   unique_name_row.sort()
   unique_name_col.sort()
   unique_name_genes.sort()
+  name_files.sort()
 
   # Create a numpy matrix of size unique_name_row x unique_name_col of integers
   indel_count_matrix = np.zeros((len(unique_name_row), len(unique_name_col)), dtype = int)
@@ -109,6 +110,7 @@ def process_count_files(data_folder):
       i = 0
       file_col_name = []
       num_col_i = 0
+      file_name_index = name_files.index(out_file[len(data_folder) + 12:-4])
       for line in f:
         line = line.replace('"', '')
         line = line.replace('\n', '')
@@ -140,11 +142,11 @@ def process_count_files(data_folder):
               total_count_i += float(l[j])
           if total_count_i/num_col_i > threshold:
             if row_name.find('SNV') != -1:
-              SNV_present_file[i] += 1
+              SNV_present_file[file_name_index] += 1
             if row_name.find('I') != -1:
-              insertion_present_file[i] += 1
+              insertion_present_file[file_name_index] += 1
             if row_name.find('D') != -1:
-              deletion_present_file[i] += 1
+              deletion_present_file[file_name_index] += 1
         i += 1
 
   # Save the indel counts and row, column name information
@@ -259,20 +261,33 @@ def analysis_count_files(indel_count_matrix, row_index, unique_name_col):
     plt.clf()
 
   plt.scatter(X[:, 0], X[:, 1])
-  plt.savefig('all-genes.pdd')
+  plt.savefig('all-genes.pdf')
   plt.clf()
 
-  '''
-  plt.scatter(X[:, 0], X[:, 1], c = gene_name_index)
-  plt.savefig('TSNE_by_gene_name.png')
-  plt.clf()
-  plt.scatter(X[:, 0], X[:, 1], c = file_name_index)
-  plt.savefig('TSNE_by_file_name.png')
-  plt.clf()
-  '''
-
+  heat_map_inner_prod = np.matmul(indel_count_matrix_small, np.transpose(indel_count_matrix_small))
+  # The next 2 lines change the plot from inner product to cosine distance
+  #  For just the inner product, comment these two lines
+  col_wise_norms = np.expand_dims(np.linalg.norm(indel_count_matrix_small, axis = 1), axis = 1)
+  heat_map_inner_prod = np.divide(heat_map_inner_prod, np.matmul(col_wise_norms, np.transpose(col_wise_norms)))
+  # Not the most efficient ways of getting the row names, but quick fix
+  heat_map_axis = []
+  for i in range(200):
+    heat_map_axis.append(row_index[np.argsort(number_of_files_per_indel)[::-1][i]])
+  fig, axis = plt.subplots()
+  heat_map = axis.pcolor(heat_map_inner_prod, cmap = plt.cm.Blues)
+  axis.set_yticks(np.arange(heat_map_inner_prod.shape[0])+0.5, minor=False)
+  axis.set_xticks(np.arange(heat_map_inner_prod.shape[1])+0.5, minor=False)
+  axis.invert_yaxis()
+  axis.set_yticklabels(heat_map_axis, minor=False)
+  axis.set_xticklabels(heat_map_axis, minor=False)
+  axis.xticks(fontsize=6, rotation=90)
+  axis.yticks(fontsize=6)
+  plt.colorbar(heat_map)
+  plt.savefig('inner_product_heat_map.pdf')
+  plt.clf
 
 # Folder containing all the indel files
-data_folder_name = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
+data_folder_name = "../IndelsData/"
+#data_folder_name = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
 indel_count_matrix, unique_name_row, unique_name_col = process_count_files(data_folder_name)
 analysis_count_files(indel_count_matrix, unique_name_row, unique_name_col)
