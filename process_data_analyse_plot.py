@@ -254,9 +254,14 @@ def analysis_count_files(indel_count_matrix, row_index, unique_name_col):
     for j in range(5):
       if file_gene_map[i, j] != -1:
         ax.plot(X[file_name_index == file_gene_map[i, j], 0], X[file_name_index == file_gene_map[i, j], 1], marker = 'o', linestyle = '', label = file_name[file_gene_map[i, j]])
-    ax.legend()
-    plt.savefig(gene_name[gene_name_uniq[i]] + '_TSNE.png')
+    ax.legend(loc='upper left')
+    plt.savefig('TSNE-results/' + gene_name[gene_name_uniq[i]] + '_TSNE.pdf')
     plt.clf()
+
+  plt.scatter(X[:, 0], X[:, 1])
+  plt.savefig('all-genes.pdd')
+  plt.clf()
+
   '''
   plt.scatter(X[:, 0], X[:, 1], c = gene_name_index)
   plt.savefig('TSNE_by_gene_name.png')
@@ -268,6 +273,6 @@ def analysis_count_files(indel_count_matrix, row_index, unique_name_col):
 
 
 # Folder containing all the indel files
-data_folder_name = "../IndelsData/"
+data_folder_name = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
 indel_count_matrix, unique_name_row, unique_name_col = process_count_files(data_folder_name)
 analysis_count_files(indel_count_matrix, unique_name_row, unique_name_col)
