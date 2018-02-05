@@ -15,28 +15,25 @@ def compute_summary_statistics(name_genes_unique, name_genes_grna_unique, name_i
   for i in range(20):
     print name_indel_type_unique[np.argsort(number_of_files_per_indel)[::-1][i]]
   #
+  # Plot TSNE
   indel_count_matrix_small = np.copy(indel_count_matrix)
   indel_count_matrix_small = indel_count_matrix_small[np.argsort(number_of_files_per_indel)[::-1][0:200]]
   X = TSNE(n_components=2, random_state=0).fit_transform(np.transpose(indel_count_matrix_small))
   plt.scatter(X[:, 0], X[:, 1])
   plt.savefig('all-genes-tsne.pdf')
   plt.clf()
+  # Plot Full PCA
   pca = PCA(n_components=2)
   X = pca.fit_transform(indel_count_matrix)
   plt.scatter(X[:, 0], X[:, 1])
   plt.savefig('all-genes-pca-non-normalized.pdf')
   plt.clf()
+  # Plot normalized PCA
   indel_count_matrix_copy = np.array(np.copy(indel_count_matrix), dtype = float)
   col_sums = np.reshape(np.sum(indel_count_matrix_copy, axis = 0), (1, -1)) 
-  print np.sum(col_sums == 0)
-  for i in range(len(name_genes_grna_unique)*3):
-    if(col_sums[0, i] == 0):
-      print name_genes_grna_unique[i//3]
   indel_count_matrix_copy -= np.reshape(np.mean(indel_count_matrix_copy, axis = 1), (-1, 1))
   row_norms = np.reshape(np.linalg.norm(indel_count_matrix_copy, axis = 0), (1, -1))
-  #row_norms[np.abs(row_norms) < 0.0001] = 1.0
   indel_count_matrix_copy = indel_count_matrix_copy/row_norms
-  print np.reshape(np.linalg.norm(indel_count_matrix_copy, axis = 0), (-1, 1)).shape
   pca2 = PCA(n_components=2)
   X = pca2.fit_transform(indel_count_matrix_copy)
   plt.scatter(X[:, 0], X[:, 1])

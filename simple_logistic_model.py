@@ -31,7 +31,7 @@ def load_gene_sequence(sequence_file_name, name_genes_grna_unique):
   # Scikit needs only a 2-d matrix as input, so reshape and return
   return np.reshape(sequence_pam_per_gene_grna, (len(name_genes_grna_unique), -1))
 
-def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index):
+def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index, plot_graph):
   log_reg = linear_model.LogisticRegression(C=1e5)
   print "----"
   print "Number of positive testing samples in insertions is %f" % np.sum(count_insertions_gene_grna_binary[test_index])
@@ -42,11 +42,12 @@ def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gen
   log_reg_pred = log_reg.predict(sequence_pam_per_gene_grna[test_index])
   log_reg_pred_train = log_reg.predict(sequence_pam_per_gene_grna[train_index])
   insertions_accuracy = metrics.accuracy_score(count_insertions_gene_grna_binary[test_index], log_reg_pred)
-  plt.plot(log_reg.coef_)
-  plt.savefig('ins_log_coeff.pdf')
-  plt.clf()
-  print log_reg.coef_
-  print "Coeff above"
+  if plot_graph:
+    print log_reg.coef_[0, :]
+    print "Coeff above"
+    plt.plot(range(len(log_reg.coef_[0, :])), log_reg.coef_[0, :])
+    plt.savefig('ins_log_coeff.pdf')
+    plt.clf()
   print "Test accuracy score for insertions: %f" % insertions_accuracy
   print "Train accuracy score for insertions: %f" % metrics.accuracy_score(count_insertions_gene_grna_binary[train_index], log_reg_pred_train)
   print "----"
@@ -60,11 +61,12 @@ def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gen
   deletions_accuracy = metrics.accuracy_score(count_deletions_gene_grna_binary[test_index], log_reg_pred)
   print "Test accuracy score for deletions: %f" % deletions_accuracy
   print "Train accuracy score for deletions: %f" % metrics.accuracy_score(count_deletions_gene_grna_binary[train_index], log_reg_pred_train)
-  plt.plot(log_reg.coef_)
-  plt.savefig('del_log_coeff.pdf')
-  plt.clf()
-  print log_reg.coef_
-  print "Coeff above"
+  if plot_graph:
+    plt.plot(range(len(log_reg.coef_[0, :])), log_reg.coef_[0, :])
+    plt.savefig('del_log_coeff.pdf')
+    plt.clf()
+    print log_reg.coef_[0, :]
+    print "Coeff above"
   return insertions_accuracy, deletions_accuracy
   '''
   temp = np.copy(count_insertions_gene_grna_binary[test_index])
@@ -91,8 +93,10 @@ def cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grn
     count_deletions_gene_grna_binary = np.copy(count_deletions_gene_grna)
     count_deletions_gene_grna_binary[count_deletions_gene_grna >= threshold_deletions] = 1
     count_deletions_gene_grna_binary[count_deletions_gene_grna < threshold_deletions] = 0
+    plot_graph = True
     for train_index, test_index in fold_valid.split(sequence_pam_per_gene_grna):
-      accuracy_score = perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index)
+      accuracy_score = perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index, plot_graph)
+      plot_graph = False
       insertion_avg_accuracy += accuracy_score[0]
       deletion_avg_accuracy += accuracy_score[1]
     insertion_avg_accuracy /= 3.0
