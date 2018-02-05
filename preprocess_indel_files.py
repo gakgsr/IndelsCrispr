@@ -10,6 +10,7 @@ def preprocess_indel_files(data_folder):
     with open(each_file) as f:
       i = 0
       process_file = False
+      add_file = False
       for line in f:
         line = line.replace('"', '')
         line = line.replace('\n', '')
@@ -18,17 +19,20 @@ def preprocess_indel_files(data_folder):
           if len(l) == 4:
             process_file = True
             curr_gene_name = each_file[len(data_folder) + 7:-4].split('-')[0]
-            name_genes.append(curr_gene_name)
-            name_genes_grna.append(curr_gene_name + '-' + l[0].split('-')[-2])
+            curr_gene_grna_name = curr_gene_name + '-' + l[0].split('-')[-2]
         if i > 0 and process_file:
           indel_type = ''
           # Some positions are of the form: "-23:-21D,-19:-15D", which get split by the process when we call split()
           # We try to account for such things in this space
           for j in range(0, len(l) - 4):
             indel_type += l[j]
-          # We ignore SNV, others, and no variants
-          if line.find('SNV') == -1 and line.find('no variant') == -1 and line.find('Other') == -1:
+          # We only consider I or D
+          if line.find('I') != -1 or line.find('D') != -1:
             name_indel_type.append(indel_type)
+            if not add_file:
+              name_genes.append(curr_gene_name)
+              name_genes_grna.append(curr_gene_grna_name)
+              add_file = True
         i += 1
 
   # Take the unique values, in sorted order
@@ -51,7 +55,7 @@ def preprocess_indel_files(data_folder):
         line = line.replace('\n', '')
         l = line.split(',')
         if i == 0:
-          if len(l) == 4:
+          if len(l) == 4 and each_file[len(data_folder) + 7:-4].split('-')[0] + '-' + l[0].split('-')[-2] in name_genes_grna_unique:
             process_file = True
             curr_gene_name = each_file[len(data_folder) + 7:-4].split('-')[0]
             col_index = name_genes_grna_unique.index(curr_gene_name + '-' + l[0].split('-')[-2])
