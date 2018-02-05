@@ -30,16 +30,22 @@ def load_gene_sequence(sequence_file_name, name_genes_grna_unique):
 
 def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index):
   log_reg = linear_model.LogisticRegression(C=1e5)
+  print "----"
   print "Number of positive testing samples in insertions is %f" % np.sum(count_insertions_gene_grna_binary[test_index])
+  print "Total number of testing samples %f" %np.size(test_index)
   print "Number of positive training samples in insertions is %f" % np.sum(count_insertions_gene_grna_binary[train_index])
+  print "Total number of training samples %f" % np.size(train_index)
   log_reg.fit(sequence_pam_per_gene_grna[train_index], count_insertions_gene_grna_binary[train_index])
   log_reg_pred = log_reg.predict(sequence_pam_per_gene_grna[test_index])
   log_reg_pred_train = log_reg.predict(sequence_pam_per_gene_grna[train_index])
   insertions_accuracy = metrics.accuracy_score(count_insertions_gene_grna_binary[test_index], log_reg_pred)
   print "Test accuracy score for insertions: %f" % insertions_accuracy
   print "Train accuracy score for insertions: %f" % metrics.accuracy_score(count_insertions_gene_grna_binary[train_index], log_reg_pred_train)
+  print "----"
   print "Number of positive testing samples in deletions is %f" % np.sum(count_deletions_gene_grna_binary[test_index])
+  print "Total number of testing samples %f" % np.size(test_index)
   print "Number of positive training samples in deletions is %f" % np.sum(count_deletions_gene_grna_binary[train_index])
+  print "Total number of training samples %f" % np.size(train_index)
   log_reg.fit(sequence_pam_per_gene_grna[train_index], count_deletions_gene_grna_binary[train_index])
   log_reg_pred = log_reg.predict(sequence_pam_per_gene_grna[test_index])
   log_reg_pred_train = log_reg.predict(sequence_pam_per_gene_grna[train_index])
@@ -71,7 +77,8 @@ def cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grn
 
 
 
-data_folder = "../IndelsData/"
+#data_folder = "../IndelsData/"
+data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
 name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix = preprocess_indel_files(data_folder)
 count_insertions_gene_grna, count_deletions_gene_grna = compute_summary_statistics(name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix)
 sequence_file_name = "sequence_pam_gene_grna.csv"
