@@ -66,7 +66,7 @@ def preprocess_indel_files(data_folder):
           for j in range(0, len(l) - 4):
             indel_type += l[j]
           # We ignore SNV, others, and no variants
-          if line.find('SNV') == -1 and line.find('no variant') == -1 and line.find('Other') == -1:
+          if line.find('I') != -1 or line.find('D') != -1:
             row_index = name_indel_type_unique.index(indel_type)
             for j in range(3):
               if l[j + len(l) - 4] != 'NA':

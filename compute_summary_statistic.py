@@ -5,8 +5,9 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
+import glob
 
-def compute_summary_statistics(name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix):
+def compute_summary_statistics(data_folder, name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix):
   # Compute TSNE on indels that commonly occur across all genes and grna
   number_of_files_per_indel = []
   for i in range(indel_count_matrix.shape[0]):
@@ -31,6 +32,7 @@ def compute_summary_statistics(name_genes_unique, name_genes_grna_unique, name_i
   # Plot normalized PCA
   indel_count_matrix_copy = np.array(np.copy(indel_count_matrix), dtype = float)
   col_sums = np.reshape(np.sum(indel_count_matrix_copy, axis = 0), (1, -1)) 
+  indel_count_matrix_copy = indel_count_matrix_copy/col_sums
   indel_count_matrix_copy -= np.reshape(np.mean(indel_count_matrix_copy, axis = 1), (-1, 1))
   row_norms = np.reshape(np.linalg.norm(indel_count_matrix_copy, axis = 0), (1, -1))
   indel_count_matrix_copy = indel_count_matrix_copy/row_norms
@@ -40,6 +42,45 @@ def compute_summary_statistics(name_genes_unique, name_genes_grna_unique, name_i
   plt.xlim(-0.1, 2)
   plt.ylim(-1, 1)
   plt.savefig('all-genes-pca-normalized.pdf')
+  plt.clf()
+  # Another normalized PCA
+  indel_prop_matrix = np.zeros((len(name_indel_type_unique), 3*len(name_genes_grna_unique)))
+  for each_file in glob.glob(data_folder + "proportions-*.txt"):
+    with open(each_file) as f:
+      i = 0
+      process_file = False
+      for line in f:
+        line = line.replace('"', '')
+        line = line.replace('\n', '')
+        l = line.split(',')
+        if i == 0:
+          if len(l) == 4 and each_file[len(data_folder) + 12:-4].split('-')[0] + '-' + l[0].split('-')[-2] in name_genes_grna_unique:
+            process_file = True
+            curr_gene_name = each_file[len(data_folder) + 12:-4].split('-')[0]
+            col_index = name_genes_grna_unique.index(curr_gene_name + '-' + l[0].split('-')[-2])
+        if i > 0 and process_file:
+          indel_type = ''
+          # Some positions are of the form: "-23:-21D,-19:-15D", which get split by the process when we call split()
+          # We try to account for such things in this space
+          for j in range(0, len(l) - 4):
+            indel_type += l[j]
+          # We ignore SNV, others, and no variants
+          if line.find('I') != -1 or line.find('D') != -1:
+            row_index = name_indel_type_unique.index(indel_type)
+            for j in range(3):
+              if l[j + len(l) - 4] != 'NA':
+                indel_prop_matrix[row_index, 3*col_index + j] = float(l[j + len(l) - 4])
+        i += 1
+  indel_prop_matrix_copy = np.array(np.copy(indel_prop_matrix), dtype = float)
+  indel_prop_matrix_copy -= np.reshape(np.mean(indel_prop_matrix_copy, axis = 1), (-1, 1))
+  row_norms = np.reshape(np.linalg.norm(indel_prop_matrix_copy, axis = 0), (1, -1))
+  indel_prop_matrix_copy = indel_prop_matrix_copy/row_norms
+  pca2 = PCA(n_components=2)
+  X = pca2.fit_transform(indel_prop_matrix_copy)
+  plt.scatter(X[:, 0], X[:, 1])
+  plt.xlim(-0.1, 2)
+  plt.ylim(-1, 1)
+  plt.savefig('all-genes-pca-normalized-prop.pdf')
   plt.clf()
 
   # Plot heat map of cosine distances
