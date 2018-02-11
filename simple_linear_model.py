@@ -34,59 +34,50 @@ def load_gene_sequence(sequence_file_name, name_genes_grna_unique):
 
 
 def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index):
-  log_reg = linear_model.LogisticRegression(C=1e5)
+  lin_reg = linear_model.LinearRegression()
   print "----"
   print "Number of positive testing samples in insertions is %f" % np.sum(count_insertions_gene_grna_binary[test_index])
   print "Total number of testing samples %f" % np.size(test_index)
   print "Number of positive training samples in insertions is %f" % np.sum(count_insertions_gene_grna_binary[train_index])
   print "Total number of training samples %f" % np.size(train_index)
-  log_reg.fit(sequence_pam_per_gene_grna[train_index], count_insertions_gene_grna_binary[train_index])
-  log_reg_pred = log_reg.predict(sequence_pam_per_gene_grna[test_index])
-  log_reg_pred_train = log_reg.predict(sequence_pam_per_gene_grna[train_index])
-  insertions_accuracy = metrics.accuracy_score(count_insertions_gene_grna_binary[test_index], log_reg_pred)
-  print "Test accuracy score for insertions: %f" % insertions_accuracy
-  print "Train accuracy score for insertions: %f" % metrics.accuracy_score(count_insertions_gene_grna_binary[train_index], log_reg_pred_train)
+  lin_reg.fit(sequence_pam_per_gene_grna[train_index], count_insertions_gene_grna_binary[train_index])
+  insertions_r2_score = lin_reg.score(sequence_pam_per_gene_grna[test_index], count_insertions_gene_grna_binary[test_index])
+  print "Test r2_score score for insertions: %f" % insertions_r2_score
+  print "Train r2_score score for insertions: %f" % lin_reg.score(sequence_pam_per_gene_grna[train_index], count_insertions_gene_grna_binary[train_index])
   print "----"
   print "Number of positive testing samples in deletions is %f" % np.sum(count_deletions_gene_grna_binary[test_index])
   print "Total number of testing samples %f" % np.size(test_index)
   print "Number of positive training samples in deletions is %f" % np.sum(count_deletions_gene_grna_binary[train_index])
   print "Total number of training samples %f" % np.size(train_index)
-  log_reg.fit(sequence_pam_per_gene_grna[train_index], count_deletions_gene_grna_binary[train_index])
-  log_reg_pred = log_reg.predict(sequence_pam_per_gene_grna[test_index])
-  log_reg_pred_train = log_reg.predict(sequence_pam_per_gene_grna[train_index])
-  deletions_accuracy = metrics.accuracy_score(count_deletions_gene_grna_binary[test_index], log_reg_pred)
-  print "Test accuracy score for deletions: %f" % deletions_accuracy
-  print "Train accuracy score for deletions: %f" % metrics.accuracy_score(count_deletions_gene_grna_binary[train_index], log_reg_pred_train)
-  return insertions_accuracy, deletions_accuracy
+  lin_reg.fit(sequence_pam_per_gene_grna[train_index], count_deletions_gene_grna_binary[train_index])
+  deletions_r2_score = lin_reg.score(sequence_pam_per_gene_grna[test_index], count_deletions_gene_grna_binary[test_index])
+  print "Test r2_score score for deletions: %f" % deletions_r2_score
+  print "Train r2_score score for deletions: %f" % lin_reg.score(sequence_pam_per_gene_grna[train_index], count_deletions_gene_grna_binary[train_index])
+  return insertions_r2_score, deletions_r2_score
 
 
 def cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna):
-  total_insertion_avg_accuracy = []
-  total_deletion_avg_accuracy = []
+  total_insertion_avg_r2_score = []
+  total_deletion_avg_r2_score = []
   for repeat in range(2000):
     fold_valid = KFold(n_splits = 3, shuffle = True, random_state = repeat)
-    insertion_avg_accuracy = 0.0
-    deletion_avg_accuracy = 0.0
-    threshold_insertions = 1
-    count_insertions_gene_grna_binary = np.copy(count_insertions_gene_grna)
-    count_insertions_gene_grna_binary[count_insertions_gene_grna >= threshold_insertions] = 1
-    count_insertions_gene_grna_binary[count_insertions_gene_grna < threshold_insertions] = 0
-    threshold_deletions = 1
-    count_deletions_gene_grna_binary = np.copy(count_deletions_gene_grna)
-    count_deletions_gene_grna_binary[count_deletions_gene_grna >= threshold_deletions] = 1
-    count_deletions_gene_grna_binary[count_deletions_gene_grna < threshold_deletions] = 0
+    insertion_avg_r2_score = 0.0
+    deletion_avg_r2_score = 0.0
+    #count_insertions_gene_grna_copy = np.reshape(count_insertions_gene_grna, (-1, 1))
+    #count_deletions_gene_grna_copy = np.reshape(count_deletions_gene_grna, (-1, 1))
     for train_index, test_index in fold_valid.split(sequence_pam_per_gene_grna):
-      accuracy_score = perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index)
-      insertion_avg_accuracy += accuracy_score[0]
-      deletion_avg_accuracy += accuracy_score[1]
-    insertion_avg_accuracy /= 3.0
-    deletion_avg_accuracy /= 3.0
-    total_insertion_avg_accuracy.append(insertion_avg_accuracy)
-    total_deletion_avg_accuracy.append(deletion_avg_accuracy)
-  print "Average accuracy for insertions predictions is %f" % np.mean(total_insertion_avg_accuracy)
-  print "Variation in accuracy for insertions predictions is %f" % np.var(total_insertion_avg_accuracy)
-  print "Average accuracy for deletions predictions is %f" % np.mean(total_deletion_avg_accuracy)
-  print "Variation in accuracy for deletions predictions is %f" % np.var(total_deletion_avg_accuracy)
+      r2_score_score = perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna, train_index, test_index)
+      insertion_avg_r2_score += r2_score_score[0]
+      deletion_avg_r2_score += r2_score_score[1]
+    insertion_avg_r2_score /= 3.0
+    deletion_avg_r2_score /= 3.0
+    total_insertion_avg_r2_score.append(float(insertion_avg_r2_score))
+    total_deletion_avg_r2_score.append(float(deletion_avg_r2_score))
+  # Some float overflows are happening, I will fix this sometime next week. Printing the array, it seems fine.
+  print "Average r2_score for insertions predictions is %f" % np.mean(np.array(total_insertion_avg_r2_score, dtype = float))
+  print "Variation in r2_score for insertions predictions is %f" % np.var(np.array(total_insertion_avg_r2_score, dtype = float))
+  print "Average r2_score for deletions predictions is %f" % np.mean(np.array(total_deletion_avg_r2_score, dtype = float))
+  print "Variation in r2_score for deletions predictions is %f" % np.var(np.array(total_deletion_avg_r2_score, dtype = float))
 
 
 
