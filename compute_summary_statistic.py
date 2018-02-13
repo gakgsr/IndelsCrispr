@@ -5,7 +5,6 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
-import glob
 
 def compute_summary_statistics(name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix):
   # Compute most common indels
