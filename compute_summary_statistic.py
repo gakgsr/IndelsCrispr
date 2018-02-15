@@ -8,6 +8,7 @@ from sklearn.decomposition import PCA
 
 def compute_summary_statistics(name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix):
   # Compute most common indels
+
   number_of_files_per_indel = []
   for i in range(indel_count_matrix.shape[0]):
     number_of_files_per_indel.append(np.count_nonzero(indel_count_matrix[i]))
@@ -87,9 +88,9 @@ def compute_summary_statistics(name_genes_grna_unique, name_indel_type_unique, i
       ins_location[i, :] = 1
     if name_indel_type_unique[i].find('D') != -1:
       del_locaion[i, :] = 1
-  threshold_ins = 0.05
+  threshold_ins = 0.1
   indel_count_matrix_threshold[np.logical_and(indel_count_matrix_threshold <= threshold_ins, ins_location)] = 0.0
-  threshold_del = 0.1
+  threshold_del = 0.18
   indel_count_matrix_threshold[np.logical_and(indel_count_matrix_threshold <= threshold_del, del_locaion)] = 0.0
   #
   # For each gene-grna pair, count the number of indels above threshold
@@ -102,8 +103,10 @@ def compute_summary_statistics(name_genes_grna_unique, name_indel_type_unique, i
           count_insertions_gene_grna[i] += 1
         if name_indel_type_unique[j].find('D') != -1:
           count_deletions_gene_grna[i] += 1
-  print "Number of zeros in deletions is %d" % np.sum(count_deletions_gene_grna == 0)
   print "Number of zeros in insertions is %d" % np.sum(count_insertions_gene_grna == 0)
+  print "Total number of files is %d" %np.size(count_insertions_gene_grna)
+  print "Number of zeros in deletions is %d" % np.sum(count_deletions_gene_grna == 0)
+  print "Total number of files is %d" % np.size(count_deletions_gene_grna)
 
   # Save the output
   indel_family_count_gene_grna = open('indel_family_count_gene_grna.txt', 'w')

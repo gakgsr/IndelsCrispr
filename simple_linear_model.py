@@ -35,25 +35,29 @@ def load_gene_sequence(sequence_file_name, name_genes_grna_unique):
 
 def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index):
   lin_reg = linear_model.LinearRegression()
-  print "----"
-  print "Number of positive testing samples in insertions is %f" % np.sum(count_insertions_gene_grna_binary[test_index])
-  print "Total number of testing samples %f" % np.size(test_index)
-  print "Number of positive training samples in insertions is %f" % np.sum(count_insertions_gene_grna_binary[train_index])
-  print "Total number of training samples %f" % np.size(train_index)
+  #print "----"
+  #print "Number of positive testing samples in insertions is %f" % np.sum(count_insertions_gene_grna_binary[test_index])
+  #print "Total number of testing samples %f" % np.size(test_index)
+  #print "Number of positive training samples in insertions is %f" % np.sum(count_insertions_gene_grna_binary[train_index])
+  #print "Total number of training samples %f" % np.size(train_index)
   lin_reg.fit(sequence_pam_per_gene_grna[train_index], count_insertions_gene_grna_binary[train_index])
-  insertions_r2_score = lin_reg.score(sequence_pam_per_gene_grna[test_index], count_insertions_gene_grna_binary[test_index])
-  print "Test r2_score score for insertions: %f" % insertions_r2_score
-  print "Train r2_score score for insertions: %f" % lin_reg.score(sequence_pam_per_gene_grna[train_index], count_insertions_gene_grna_binary[train_index])
-  print "----"
-  print "Number of positive testing samples in deletions is %f" % np.sum(count_deletions_gene_grna_binary[test_index])
-  print "Total number of testing samples %f" % np.size(test_index)
-  print "Number of positive training samples in deletions is %f" % np.sum(count_deletions_gene_grna_binary[train_index])
-  print "Total number of training samples %f" % np.size(train_index)
+  lin_reg_pred = lin_reg.predict(sequence_pam_per_gene_grna[test_index])
+  insertions_rmse = np.sqrt(np.mean((lin_reg_pred - count_insertions_gene_grna_binary[test_index])**2))
+  #insertions_r2_score = lin_reg.score(sequence_pam_per_gene_grna[test_index], count_insertions_gene_grna_binary[test_index])
+  #print "Test mse_score score for insertions: %f" % insertions_r2_score
+  #print "Train mse_score score for insertions: %f" % lin_reg.score(sequence_pam_per_gene_grna[train_index], count_insertions_gene_grna_binary[train_index])
+  #print "----"
+  #print "Number of positive testing samples in deletions is %f" % np.sum(count_deletions_gene_grna_binary[test_index])
+  #print "Total number of testing samples %f" % np.size(test_index)
+  #print "Number of positive training samples in deletions is %f" % np.sum(count_deletions_gene_grna_binary[train_index])
+  #print "Total number of training samples %f" % np.size(train_index)
   lin_reg.fit(sequence_pam_per_gene_grna[train_index], count_deletions_gene_grna_binary[train_index])
+  lin_reg_pred = lin_reg.predict(sequence_pam_per_gene_grna[test_index])
+  deletions_rmse = np.sqrt(np.mean((lin_reg_pred - count_deletions_gene_grna_binary[test_index])**2))
   deletions_r2_score = lin_reg.score(sequence_pam_per_gene_grna[test_index], count_deletions_gene_grna_binary[test_index])
-  print "Test r2_score score for deletions: %f" % deletions_r2_score
-  print "Train r2_score score for deletions: %f" % lin_reg.score(sequence_pam_per_gene_grna[train_index], count_deletions_gene_grna_binary[train_index])
-  return insertions_r2_score, deletions_r2_score
+  #print "Test r2_score score for deletions: %f" % deletions_r2_score
+  #print "Train r2_score score for deletions: %f" % lin_reg.score(sequence_pam_per_gene_grna[train_index], count_deletions_gene_grna_binary[train_index])
+  return insertions_rmse, deletions_rmse
 
 
 def cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna):
@@ -74,22 +78,34 @@ def cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grn
     total_insertion_avg_r2_score.append(float(insertion_avg_r2_score))
     total_deletion_avg_r2_score.append(float(deletion_avg_r2_score))
   # Some float overflows are happening, I will fix this sometime next week. Printing the array, it seems fine.
-  print "Average r2_score for insertions predictions is %f" % np.mean(np.array(total_insertion_avg_r2_score, dtype = float))
-  print "Variation in r2_score for insertions predictions is %f" % np.var(np.array(total_insertion_avg_r2_score, dtype = float))
-  print "Average r2_score for deletions predictions is %f" % np.mean(np.array(total_deletion_avg_r2_score, dtype = float))
-  print "Variation in r2_score for deletions predictions is %f" % np.var(np.array(total_deletion_avg_r2_score, dtype = float))
+  print "Average rmse for insertions predictions is %f" % np.mean(np.array(total_insertion_avg_r2_score, dtype = float))
+  print "Variation in rmse for insertions predictions is %f" % np.var(np.array(total_insertion_avg_r2_score, dtype = float))
+  print "Average rmse for deletions predictions is %f" % np.mean(np.array(total_deletion_avg_r2_score, dtype = float))
+  print "Variation in rmse for deletions predictions is %f" % np.var(np.array(total_deletion_avg_r2_score, dtype = float))
 
 
 
-data_folder = "../IndelsData/"
+#data_folder = "../IndelsData/"
 sequence_file_name = "sequence_pam_gene_grna.csv"
-#data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
+data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
 name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix = preprocess_indel_files(data_folder)
-count_insertions_gene_grna, count_deletions_gene_grna = compute_summary_statistics(name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix)
+#count_insertions_gene_grna, count_deletions_gene_grna = compute_summary_statistics(name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix)
+##
+# Compute the proportions of insertions and deletions in each file
+prop_insertions_gene_grna = np.zeros(len(name_genes_grna_unique), dtype = float)
+prop_deletions_gene_grna = np.zeros(len(name_genes_grna_unique), dtype = float)
+for i in range(len(name_genes_grna_unique)):
+  for j in range(indel_prop_matrix.shape[0]):
+    # across repeats
+    if name_indel_type_unique[j].find('I') != -1:
+      prop_insertions_gene_grna[i] += np.mean(indel_prop_matrix[j][3*i:3*i+3], dtype = float)
+    if name_indel_type_unique[j].find('D') != -1:
+      prop_deletions_gene_grna[i] += np.mean(indel_prop_matrix[j][3*i:3*i+3], dtype = float)
+##
 sequence_pam_per_gene_grna, sequence_per_gene_grna, pam_per_gene_grna = load_gene_sequence(sequence_file_name, name_genes_grna_unique)
 print "Using both grna sequence and PAM"
-cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna)
+cross_validation_model(sequence_pam_per_gene_grna, prop_insertions_gene_grna, prop_deletions_gene_grna)
 print "Using only grna sequence"
-cross_validation_model(sequence_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna)
+cross_validation_model(sequence_per_gene_grna, prop_insertions_gene_grna, prop_deletions_gene_grna)
 print "Using only PAM"
-cross_validation_model(pam_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna)
+cross_validation_model(pam_per_gene_grna, prop_insertions_gene_grna, prop_deletions_gene_grna)
