@@ -30,9 +30,9 @@ def load_gene_sequence(sequence_file_name, name_genes_grna_unique):
   return sequence_per_gene_grna_list, pam_per_gene_grna_list
 
 
-#data_folder = "../IndelsData/"
+data_folder = "../IndelsData/"
 sequence_file_name = "sequence_pam_gene_grna.csv"
-data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
+#data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
 name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix = preprocess_indel_files(data_folder)
 sequence_per_gene_grna, pam_per_gene_grna = load_gene_sequence(sequence_file_name, name_genes_grna_unique)
 
@@ -55,39 +55,33 @@ for i in range(len(name_genes_grna_unique)):
       prop_deletions_gene_grna[i] += np.mean(indel_prop_matrix[j][3*i:3*i+3], dtype = float)
 
 # Compute the sums for each unique pam and sequence
-unique_pam_ins = [0.0]*len(unique_pam)
-unique_pam_del = [0.0]*len(unique_pam)
-unique_seq_ins = [0.0]*len(unique_sequence)
-unique_seq_del = [0.0]*len(unique_sequence)
-
-unique_pam_ins_counter = [0]*len(unique_pam)
-unique_pam_del_counter = [0]*len(unique_pam)
-unique_seq_ins_counter = [0]*len(unique_sequence)
-unique_seq_del_counter = [0]*len(unique_sequence)
+unique_pam_ins = [[] for _ in range(len(unique_pam))]
+unique_pam_del = [[] for _ in range(len(unique_pam))]
+unique_seq_ins = [[] for _ in range(len(unique_sequence))]
+unique_seq_del = [[] for _ in range(len(unique_sequence))]
 
 
 for i in range(len(name_genes_grna_unique)):
   pam_index = unique_pam.index(pam_per_gene_grna[i])
   sequence_index = unique_sequence.index(sequence_per_gene_grna[i][16] + sequence_per_gene_grna[i][15])
 
-  unique_pam_ins[pam_index] += prop_insertions_gene_grna[i]
-  unique_pam_del[pam_index] += prop_deletions_gene_grna[i]
-  unique_seq_ins[sequence_index] += prop_insertions_gene_grna[i]
-  unique_seq_del[sequence_index] += prop_deletions_gene_grna[i]
-
-  unique_pam_ins_counter[pam_index] += 1
-  unique_pam_del_counter[pam_index] += 1
-  unique_seq_ins_counter[sequence_index] += 1
-  unique_seq_del_counter[sequence_index] += 1
+  unique_pam_ins[pam_index].append(prop_insertions_gene_grna[i])
+  unique_pam_del[pam_index].append(prop_deletions_gene_grna[i])
+  unique_seq_ins[sequence_index].append(prop_insertions_gene_grna[i])
+  unique_seq_del[sequence_index].append(prop_deletions_gene_grna[i])
 
 
 # Print the averages
 for i in range(len(unique_pam)):
   print unique_pam[i]
-  print unique_pam_ins[i]/unique_pam_ins_counter[i]
-  print unique_pam_del[i]/unique_pam_del_counter[i]
+  print np.mean(unique_pam_ins[i])
+  print np.var(unique_pam_ins[i])
+  print np.mean(unique_pam_del[i])
+  print np.var(unique_pam_del[i])
 
 for i in range(len(unique_sequence)):
   print unique_sequence[i]
-  print unique_seq_ins[i]/unique_seq_ins_counter[i]
-  print unique_seq_del[i]/unique_seq_del_counter[i]
+  print np.mean(unique_seq_ins[i])
+  print np.var(unique_seq_ins[i])
+  print np.mean(unique_seq_del[i])
+  print np.var(unique_seq_del[i])

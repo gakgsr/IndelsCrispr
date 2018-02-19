@@ -32,6 +32,32 @@ def load_gene_sequence(sequence_file_name, name_genes_grna_unique):
   # Scikit needs only a 2-d matrix as input, so reshape and return
   return np.reshape(sequence_pam_per_gene_grna, (len(name_genes_grna_unique), -1)), np.reshape(sequence_pam_per_gene_grna[:, :20, :], (len(name_genes_grna_unique), -1)), np.reshape(sequence_pam_per_gene_grna[:, 20:, :], (len(name_genes_grna_unique), -1))
 
+def load_gene_sequence_k_mer(sequence_file_name, name_genes_grna_unique, k):
+  # Create numpy matrix of size len(name_genes_grna_unique) * 23, to store the sequence first
+  sequence_pam_per_gene_grna = np.zeros((len(name_genes_grna_unique), 23), dtype = int)
+  # Obtain the grna and PAM sequence corresponding to name_genes_grna_unique
+  with open(sequence_file_name) as f:
+    for line in f:
+      line = line.replace('"', '')
+      line = line.replace(' ', '')
+      line = line.replace('\n', '')
+      l = line.split(',')
+      if l[1] + '-' + l[0] in name_genes_grna_unique:
+        index_in_name_genes_grna_unique = name_genes_grna_unique.index(l[1] + '-' + l[0])
+        for i in range(20):
+          sequence_pam_per_gene_grna[index_in_name_genes_grna_unique, i] = one_hot_index(l[2][i])
+        for i in range(3):
+          sequence_pam_per_gene_grna[index_in_name_genes_grna_unique, 20 + i] = one_hot_index(l[3][i])
+  # Compute k_mers
+  k_mer_list = np.zeros((len(name_genes_grna_unique), 4**k), dtype = int)
+  for i in range(len(name_genes_grna_unique)):
+    for j in range(23 - k + 1):
+      k_mer = 0
+      for r in range(k):
+        k_mer += sequence_pam_per_gene_grna[j]*(4**(k - r - 1))
+      k_mer_list[i, k_mer] += 1
+  return k_mer_list
+
 
 def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index):
   lin_reg = linear_model.LinearRegression()
@@ -85,9 +111,9 @@ def cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grn
 
 
 
-#data_folder = "../IndelsData/"
+data_folder = "../IndelsData/"
 sequence_file_name = "sequence_pam_gene_grna.csv"
-data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
+#data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
 name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix = preprocess_indel_files(data_folder)
 #count_insertions_gene_grna, count_deletions_gene_grna = compute_summary_statistics(name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix)
 ##
@@ -102,6 +128,7 @@ for i in range(len(name_genes_grna_unique)):
     if name_indel_type_unique[j].find('D') != -1:
       prop_deletions_gene_grna[i] += np.mean(indel_prop_matrix[j][3*i:3*i+3], dtype = float)
 ##
+'''
 sequence_pam_per_gene_grna, sequence_per_gene_grna, pam_per_gene_grna = load_gene_sequence(sequence_file_name, name_genes_grna_unique)
 print "Using both grna sequence and PAM"
 cross_validation_model(sequence_pam_per_gene_grna, prop_insertions_gene_grna, prop_deletions_gene_grna)
@@ -109,3 +136,6 @@ print "Using only grna sequence"
 cross_validation_model(sequence_per_gene_grna, prop_insertions_gene_grna, prop_deletions_gene_grna)
 print "Using only PAM"
 cross_validation_model(pam_per_gene_grna, prop_insertions_gene_grna, prop_deletions_gene_grna)
+'''
+k_mer_list = load_gene_sequence_k_mer(sequence_file_name, name_genes_grna_unique, 3)
+cross_validation_model(k_mer_list, prop_insertions_gene_grna, prop_deletions_gene_grna)
