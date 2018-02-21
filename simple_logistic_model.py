@@ -54,7 +54,7 @@ def load_gene_sequence_k_mer(sequence_file_name, name_genes_grna_unique, k):
     for j in range(23 - k + 1):
       k_mer = 0
       for r in range(k):
-        k_mer += sequence_pam_per_gene_grna[j]*(4**(k - r - 1))
+        k_mer += sequence_pam_per_gene_grna[i][j + r]*(4**(k - r - 1))
       k_mer_list[i, k_mer] += 1
   return k_mer_list
 
@@ -135,4 +135,5 @@ print "Using only PAM"
 cross_validation_model(pam_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna)
 '''
 k_mer_list = load_gene_sequence_k_mer(sequence_file_name, name_genes_grna_unique, 3)
+print k_mer_list
 cross_validation_model(k_mer_list, count_insertions_gene_grna, count_deletions_gene_grna)
