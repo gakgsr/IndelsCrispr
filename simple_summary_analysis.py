@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
 
 def load_gene_sequence(sequence_file_name, name_genes_grna_unique):
   # Create numpy matrix of size len(name_genes_grna_unique) * 23 * 4, to store the sequence as one-hot encoded

@@ -6,6 +6,8 @@ from sklearn.model_selection import KFold
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def one_hot_index(nucleotide):
@@ -117,9 +119,9 @@ def cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grn
 
 
 
-data_folder = "../IndelsData/"
+#data_folder = "../IndelsData/"
 sequence_file_name = "sequence_pam_gene_grna.csv"
-#data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
+data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
 name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix = preprocess_indel_files(data_folder)
 count_insertions_gene_grna, count_deletions_gene_grna = compute_summary_statistics(name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix)
 '''

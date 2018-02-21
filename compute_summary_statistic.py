@@ -12,9 +12,9 @@ def compute_summary_statistics(name_genes_grna_unique, name_indel_type_unique, i
   number_of_files_per_indel = []
   for i in range(indel_count_matrix.shape[0]):
     number_of_files_per_indel.append(np.count_nonzero(indel_count_matrix[i]))
-  print "The twenty most commonly occurring indels are:"
-  for i in range(20):
-    print name_indel_type_unique[np.argsort(number_of_files_per_indel)[::-1][i]]
+  #print "The twenty most commonly occurring indels are:"
+  #for i in range(20):
+  #  print name_indel_type_unique[np.argsort(number_of_files_per_indel)[::-1][i]]
 
   #
   # Plot TSNE
