@@ -61,7 +61,7 @@ def load_gene_sequence_k_mer(sequence_file_name, name_genes_grna_unique, k):
   return k_mer_list
 
 
-def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index):
+def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index, to_plot = False):
   log_reg = linear_model.LogisticRegression(C=200)
   #print "----"
   #print "Number of positive testing samples in insertions is %f" % np.sum(count_insertions_gene_grna_binary[test_index])
@@ -72,6 +72,10 @@ def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gen
   log_reg_pred = log_reg.predict(sequence_pam_per_gene_grna[test_index])
   log_reg_pred_train = log_reg.predict(sequence_pam_per_gene_grna[train_index])
   insertions_accuracy = metrics.accuracy_score(count_insertions_gene_grna_binary[test_index], log_reg_pred)
+  if to_plot:
+    plt.plot(log_reg.coef_[0, :])
+    plt.savefig('ins_log_coeff.pdf')
+    plt.clf()
   #print "Test accuracy score for insertions: %f" % insertions_accuracy
   #print "Train accuracy score for insertions: %f" % metrics.accuracy_score(count_insertions_gene_grna_binary[train_index], log_reg_pred_train)
   #print "----"
@@ -83,6 +87,10 @@ def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gen
   log_reg_pred = log_reg.predict(sequence_pam_per_gene_grna[test_index])
   log_reg_pred_train = log_reg.predict(sequence_pam_per_gene_grna[train_index])
   deletions_accuracy = metrics.accuracy_score(count_deletions_gene_grna_binary[test_index], log_reg_pred)
+  if to_plot:
+    plt.plot(log_reg.coef_[0, :])
+    plt.savefig('del_log_coeff.pdf')
+    plt.clf()
   #print log_reg_pred
   #print "Test accuracy score for deletions: %f" % deletions_accuracy
   #print "Train accuracy score for deletions: %f" % metrics.accuracy_score(count_deletions_gene_grna_binary[train_index], log_reg_pred_train)
@@ -104,10 +112,15 @@ def cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grn
     count_deletions_gene_grna_binary = np.copy(count_deletions_gene_grna)
     count_deletions_gene_grna_binary[count_deletions_gene_grna >= threshold_deletions] = 1
     count_deletions_gene_grna_binary[count_deletions_gene_grna < threshold_deletions] = 0
+    fold = 0
     for train_index, test_index in fold_valid.split(sequence_pam_per_gene_grna):
-      accuracy_score = perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index)
+      to_plot = False
+      if repeat == 1999 and fold == 2:
+        to_plot = True
+      accuracy_score = perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index, to_plot)
       insertion_avg_accuracy += accuracy_score[0]
       deletion_avg_accuracy += accuracy_score[1]
+      fold += 1
     insertion_avg_accuracy /= 3.0
     deletion_avg_accuracy /= 3.0
     total_insertion_avg_accuracy.append(insertion_avg_accuracy)
@@ -119,9 +132,9 @@ def cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grn
 
 
 
-#data_folder = "../IndelsData/"
+data_folder = "../IndelsData/"
 sequence_file_name = "sequence_pam_gene_grna.csv"
-data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
+#data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
 name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix = preprocess_indel_files(data_folder)
 count_insertions_gene_grna, count_deletions_gene_grna = compute_summary_statistics(name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix)
 
@@ -129,10 +142,10 @@ sequence_pam_per_gene_grna, sequence_per_gene_grna, pam_per_gene_grna = load_gen
 print "Using both grna sequence and PAM"
 cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna)
 print "Using only grna sequence"
-cross_validation_model(sequence_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna)
+#cross_validation_model(sequence_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna)
 print "Using only PAM"
-cross_validation_model(pam_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna)
+#cross_validation_model(pam_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna)
 
 k_mer_list = load_gene_sequence_k_mer(sequence_file_name, name_genes_grna_unique, 3)
 print k_mer_list
-cross_validation_model(k_mer_list, count_insertions_gene_grna, count_deletions_gene_grna)
+#cross_validation_model(k_mer_list, count_insertions_gene_grna, count_deletions_gene_grna)

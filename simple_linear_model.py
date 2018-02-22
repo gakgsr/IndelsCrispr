@@ -59,7 +59,7 @@ def load_gene_sequence_k_mer(sequence_file_name, name_genes_grna_unique, k):
   return k_mer_list
 
 
-def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index):
+def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna_binary, count_deletions_gene_grna_binary, train_index, test_index, to_plot = False):
   lin_reg = linear_model.LinearRegression()
   #print "----"
   #print "Number of positive testing samples in insertions is %f" % np.sum(count_insertions_gene_grna_binary[test_index])
@@ -69,6 +69,10 @@ def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gen
   lin_reg.fit(sequence_pam_per_gene_grna[train_index], count_insertions_gene_grna_binary[train_index])
   lin_reg_pred = lin_reg.predict(sequence_pam_per_gene_grna[test_index])
   insertions_rmse = np.sqrt(np.mean((lin_reg_pred - count_insertions_gene_grna_binary[test_index])**2))
+  if to_plot:
+    plt.plot(lin_reg.coef_)
+    plt.savefig('ins_lin_coeff.pdf')
+    plt.clf()
   #insertions_r2_score = lin_reg.score(sequence_pam_per_gene_grna[test_index], count_insertions_gene_grna_binary[test_index])
   #print "Test mse_score score for insertions: %f" % insertions_r2_score
   #print "Train mse_score score for insertions: %f" % lin_reg.score(sequence_pam_per_gene_grna[train_index], count_insertions_gene_grna_binary[train_index])
@@ -81,6 +85,10 @@ def perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gen
   lin_reg_pred = lin_reg.predict(sequence_pam_per_gene_grna[test_index])
   deletions_rmse = np.sqrt(np.mean((lin_reg_pred - count_deletions_gene_grna_binary[test_index])**2))
   deletions_r2_score = lin_reg.score(sequence_pam_per_gene_grna[test_index], count_deletions_gene_grna_binary[test_index])
+  if to_plot:
+    plt.plot(lin_reg.coef_)
+    plt.savefig('del_lin_coeff.pdf')
+    plt.clf()
   #print "Test r2_score score for deletions: %f" % deletions_r2_score
   #print "Train r2_score score for deletions: %f" % lin_reg.score(sequence_pam_per_gene_grna[train_index], count_deletions_gene_grna_binary[train_index])
   return insertions_rmse, deletions_rmse
@@ -95,10 +103,15 @@ def cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grn
     deletion_avg_r2_score = 0.0
     #count_insertions_gene_grna_copy = np.reshape(count_insertions_gene_grna, (-1, 1))
     #count_deletions_gene_grna_copy = np.reshape(count_deletions_gene_grna, (-1, 1))
+    fold = 0
     for train_index, test_index in fold_valid.split(sequence_pam_per_gene_grna):
-      r2_score_score = perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna, train_index, test_index)
+      to_plot = False
+      if repeat == 1999 and fold == 2:
+        to_plot = True
+      r2_score_score = perform_logistic_regression(sequence_pam_per_gene_grna, count_insertions_gene_grna, count_deletions_gene_grna, train_index, test_index, to_plot)
       insertion_avg_r2_score += r2_score_score[0]
       deletion_avg_r2_score += r2_score_score[1]
+      fold += 1
     insertion_avg_r2_score /= 3.0
     deletion_avg_r2_score /= 3.0
     total_insertion_avg_r2_score.append(float(insertion_avg_r2_score))
