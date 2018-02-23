@@ -35,7 +35,7 @@ def load_gene_sequence(sequence_file_name, name_genes_grna_unique):
 data_folder = "../IndelsData/"
 sequence_file_name = "sequence_pam_gene_grna.csv"
 #data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
-name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix = preprocess_indel_files(data_folder)
+name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, indel_prop_matrix, length_indel = preprocess_indel_files(data_folder)
 sequence_per_gene_grna, pam_per_gene_grna = load_gene_sequence(sequence_file_name, name_genes_grna_unique)
 
 # Compute the unique PAM and cleavage words
@@ -52,9 +52,11 @@ for i in range(len(name_genes_grna_unique)):
   for j in range(indel_prop_matrix.shape[0]):
     # across repeats
     if name_indel_type_unique[j].find('I') != -1:
-      prop_insertions_gene_grna[i] += np.mean(indel_prop_matrix[j][3*i:3*i+3], dtype = float)
+      # Computes the average insertion. Comment the multiplication to compute the average proportion
+      prop_insertions_gene_grna[i] += np.mean(indel_prop_matrix[j][3*i:3*i+3], dtype = float)*length_indel[j]
     if name_indel_type_unique[j].find('D') != -1:
-      prop_deletions_gene_grna[i] += np.mean(indel_prop_matrix[j][3*i:3*i+3], dtype = float)
+      # Computes the average deletion. Comment the multiplication to compute the average proportion
+      prop_deletions_gene_grna[i] += np.mean(indel_prop_matrix[j][3*i:3*i+3], dtype = float)*length_indel[j]
 
 # Compute the sums for each unique pam and sequence
 unique_pam_ins = [[] for _ in range(len(unique_pam))]

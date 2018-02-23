@@ -119,7 +119,7 @@ def cross_validation_model(sequence_pam_per_gene_grna, count_insertions_gene_grn
 
 #data_folder = "../IndelsData/"
 data_folder = "/Users/amirali/Projects/CRISPR-data/R data/AM_TechMerg_Summary/"
-name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix = preprocess_indel_files(data_folder)
+name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix, length_indel = preprocess_indel_files(data_folder)
 count_insertions_gene_grna, count_deletions_gene_grna = compute_summary_statistics(name_genes_unique, name_genes_grna_unique, name_indel_type_unique, indel_count_matrix)
 sequence_file_name = "sequence_pam_gene_grna.csv"
 sequence_pam_per_gene_grna = load_gene_sequence(sequence_file_name, name_genes_grna_unique)
